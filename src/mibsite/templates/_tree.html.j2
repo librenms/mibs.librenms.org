@@ -13,7 +13,7 @@
 {%- if has_st or has_ex %}<td>{% if has_st %}<span class="st">{{ o.status }}</span>{% endif %}</td>{% endif %}
 {%- if has_ex %}<td class="exv">{% set e = ex[o.name][0] %}<code title="{{ e.t }} · instance .{{ e.i }} · {{ e.f }}">{{ e.v|enum_label(o.enums)|truncate(48, True, "…", 0) }}</code></td>{% endif %}</tr>
 {%- if o.description or o.units or o.indexes or o.augments or o.enums or o.objects or has_ex -%}
-<tr class="dr" hidden><td colspan="{{ 6 if ex else 5 }}"><div class="det"><p class="kl">{{ o.kind }}{% if o.syntax %} · {{ o.syntax }}{% endif %}{% if o.access %} · {{ o.access }}{% endif %}{% if o.status %} · {{ o.status }}{% endif %}</p>
+<tr class="dr" hidden><td colspan="{{ 6 if ex else 5 }}"><div><p class="kl">{{ o.kind }}{% if o.syntax %} · {{ o.syntax }}{% endif %}{% if o.access %} · {{ o.access }}{% endif %}{% if o.status %} · {{ o.status }}{% endif %}</p>
 {%- if o.description %}<pre class="desc">{{ o.description }}</pre>{% endif -%}
 {%- if o.units or o.indexes or o.augments or o.enums or o.objects %}<dl>
 {%- if o.units %}<dt>Units</dt><dd>{{ o.units }}</dd>{% endif -%}

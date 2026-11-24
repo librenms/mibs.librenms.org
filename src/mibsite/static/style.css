@@ -102,7 +102,7 @@ table.imports th{white-space:nowrap;font-weight:600}table.imports tr:last-child>
 table.imports td{overflow-wrap:anywhere;color:var(--muted)}table.imports td a{color:var(--link)}
 .tcs dt{margin-top:10px;scroll-margin-top:16px;border-radius:4px}.tcs dt:target{background:var(--hl)}.tcs dd{margin:4px 0 0 16px}.tcs p{margin:2px 0}
 
-/* tree-table */
+/* tree-table (the detail box in a .dr row is a class-less div: one class fewer in thousands of rows) */
 .tt-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:6px}
 .tt{border-collapse:collapse;width:100%;font-size:14px}
 .tt th{text-align:left;font-weight:600;color:var(--muted);background:var(--surface);border-bottom:2px solid var(--border);padding:8px 10px;white-space:nowrap}
@@ -129,11 +129,11 @@ table.imports td{overflow-wrap:anywhere;color:var(--muted)}table.imports td a{co
 .tt td.syn[title]{cursor:help;text-decoration:underline dotted;text-underline-offset:3px}
 .tt td.exv{max-width:22em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tt td.exv code{font-size:13px}
 .tt tr.dr>td{max-width:0;background:var(--surface);padding:4px 10px 12px}
-.det{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:12px 14px;white-space:normal}
-.det p{margin:0}
+.dr>td>div{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:12px 14px;white-space:normal}
+.dr>td>div p{margin:0}
 .kl{color:var(--muted);font-size:13px;margin-bottom:8px!important}
-.det dl{display:grid;grid-template-columns:max-content 1fr;gap:2px 12px;margin:8px 0 0}.det dt{color:var(--muted)}.det dd{margin:0}
-.ex{margin-top:10px;overflow-x:auto}.det{overflow-wrap:anywhere}.exh{color:var(--muted);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin:0 0 6px!important}
+.dr>td>div dl{display:grid;grid-template-columns:max-content 1fr;gap:2px 12px;margin:8px 0 0}.dr>td>div dt{color:var(--muted)}.dr>td>div dd{margin:0}
+.ex{margin-top:10px;overflow-x:auto}.dr>td>div{overflow-wrap:anywhere}.exh{color:var(--muted);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin:0 0 6px!important}
 .ex table{border-collapse:separate;border-spacing:0;font-size:13px;width:auto;max-width:100%;border:1px solid var(--border);border-radius:6px;overflow:hidden}
 .ex th{background:var(--surface);color:var(--muted);font-weight:600;text-align:left;padding:5px 14px;border-bottom:1px solid var(--border);white-space:nowrap}
 .ex td{padding:5px 14px;border-bottom:1px solid var(--line);vertical-align:top;white-space:nowrap}.ex tr:last-child td{border-bottom:0}
