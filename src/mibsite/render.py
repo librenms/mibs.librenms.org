@@ -129,7 +129,9 @@ def _meta_description(m: Module, vendor: str) -> str:
     facts = f"{len(m.objects):,} objects with OIDs, types and descriptions."
     if not desc:
         return clip(f"{m.name} SNMP MIB{of}: {facts}")
-    return clip(f"{m.name}: {desc}" + (f" {facts}" if len(desc) < 80 else ""))
+    if len(desc) < 80:
+        desc = (desc if desc[-1] in ".!?" else desc + ".") + " " + facts
+    return clip(f"{m.name}: {desc}")
 
 
 MAX_HINT_VALUES = 40  # enumerations listed in a Type tooltip (IANAifType alone has ~280)

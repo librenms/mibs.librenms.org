@@ -235,3 +235,11 @@ def test_json_ld(tmp_path):
     assert vendor[1]["itemListElement"][-1]["item"] == "https://x.test/vendors/example/"
     assert blocks("mibs/index.html")[0]["@type"] == "CollectionPage"
     assert blocks("vendors/index.html")[0]["@type"] == "CollectionPage"
+
+
+def test_short_description_gets_a_full_stop_before_the_facts():
+    from mibsite.render import _meta_description
+    m = Module("S-MIB", "s", "s/S-MIB", "pysmi", identity={"description": "Enterprise-subtree for Stulz devices"})
+    assert _meta_description(m, "Stulz") == "S-MIB: Enterprise-subtree for Stulz devices. 0 objects with OIDs, types and descriptions."
+    m.identity["description"] = "Done."
+    assert _meta_description(m, "Stulz").startswith("S-MIB: Done. 0 objects")
