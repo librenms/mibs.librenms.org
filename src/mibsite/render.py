@@ -25,8 +25,6 @@ from .usage import Usage
 from .vendors import enterprise_number, module_root_oid, slugify
 
 STATIC = Path(__file__).parent / "static"
-KIND_ABBR = {"node": "N", "identity": "I", "scalar": "S", "table": "T", "row": "R", "column": "C",
-             "notification": "!", "group": "G", "compliance": "M"}
 ACCESS_ABBR = {"read-only": "RO", "read-write": "RW", "read-create": "RC", "not-accessible": "NA",
                "accessible-for-notify": "AN", "write-only": "WO"}
 TIER_LABEL = {"pysmi": "Fully parsed", "netsnmp": "Parsed by net-snmp", "regex": "Partially parsed", "raw": "Unparsed"}
@@ -87,7 +85,7 @@ def smi_date(value: str) -> tuple[str, str] | None:
 def make_env(root: str = "") -> Environment:
     env = Environment(loader=PackageLoader("mibsite", "templates"), autoescape=select_autoescape(["j2", "html"]),
                       trim_blocks=True, lstrip_blocks=True)
-    env.globals.update(jsonld=jsonld, KIND_ABBR=KIND_ABBR, ACCESS_ABBR=ACCESS_ABBR, TIER_LABEL=TIER_LABEL, root=root,
+    env.globals.update(jsonld=jsonld, ACCESS_ABBR=ACCESS_ABBR, TIER_LABEL=TIER_LABEL, root=root,
                        asset_v=asset_version())
     env.filters["slug"] = slugify
     env.filters["enum_label"] = enum_label

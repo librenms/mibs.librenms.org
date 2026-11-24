@@ -1,6 +1,6 @@
-:root{--red:#db202e;--gray:#575756;--bg:#f6f7f9;--card:#fff;--surface:#f6f8fa;--border:#d0d7de;--line:#eaeef2;--text:#24292f;--muted:#57606a;--link:#1f6fb2;--code:#f0f2f5;--syn:#8a5a00;--hl:#db202e1a;color-scheme:light}
-@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#272b30;--card:#2e3338;--surface:#353a41;--border:#3e444c;--line:#383e45;--text:#f9fafb;--muted:#acb6bf;--link:#6cb6ff;--code:#353a41;--syn:#e3b341;--hl:#db202e33;color-scheme:dark}}
-:root[data-theme=dark]{--bg:#272b30;--card:#2e3338;--surface:#353a41;--border:#3e444c;--line:#383e45;--text:#f9fafb;--muted:#acb6bf;--link:#6cb6ff;--code:#353a41;--syn:#e3b341;--hl:#db202e33;color-scheme:dark}
+:root{--red:#db202e;--gray:#575756;--bg:#f6f7f9;--card:#fff;--surface:#f6f8fa;--border:#d0d7de;--line:#eaeef2;--text:#24292f;--muted:#57606a;--link:#1f6fb2;--code:#f0f2f5;--syn:#8a5a00;--hl:#db202e1a;--hl-row:color-mix(in srgb,#db202e 10%,#fff);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#272b30;--card:#2e3338;--surface:#353a41;--border:#3e444c;--line:#383e45;--text:#f9fafb;--muted:#acb6bf;--link:#6cb6ff;--code:#353a41;--syn:#e3b341;--hl:#db202e33;--hl-row:color-mix(in srgb,#db202e 20%,#2e3338);color-scheme:dark}}
+:root[data-theme=dark]{--bg:#272b30;--card:#2e3338;--surface:#353a41;--border:#3e444c;--line:#383e45;--text:#f9fafb;--muted:#acb6bf;--link:#6cb6ff;--code:#353a41;--syn:#e3b341;--hl:#db202e33;--hl-row:color-mix(in srgb,#db202e 20%,#2e3338);color-scheme:dark}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif}
 a{color:var(--link);text-decoration:none}a:hover{color:var(--red)}
@@ -106,18 +106,22 @@ table.imports td{overflow-wrap:anywhere;color:var(--muted)}table.imports td a{co
 .tt-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:6px}
 .tt{border-collapse:collapse;width:100%;font-size:14px}
 .tt th{text-align:left;font-weight:600;color:var(--muted);background:var(--surface);border-bottom:2px solid var(--border);padding:8px 10px;white-space:nowrap}
-.tt td{padding:4px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
-.tt tr.r{cursor:pointer}.tt tr.r:hover,.tt tr.r.open{background:var(--surface)}
-.tt tr.r:target,.tt tr.r.hl{background:var(--hl)}
+.tt td{padding:4px 10px;vertical-align:middle}.tt tr{border-bottom:1px solid var(--line)}
+.tt tr.r{cursor:pointer}.tt tr.r:hover,.tt tr.r.open{background:var(--surface);box-shadow:inset 0 0 0 9999px var(--surface)}
+.tt tr.r:target,.tt tr.r.hl{background:var(--hl-row);box-shadow:inset 0 0 0 9999px var(--hl-row)} /* opaque: the shadow and the background overlap in the cells */
 .tt tr[data-d="1"]{--d:1}.tt tr[data-d="2"]{--d:2}.tt tr[data-d="3"]{--d:3}.tt tr[data-d="4"]{--d:4}.tt tr[data-d="5"]{--d:5}.tt tr[data-d="6"]{--d:6}.tt tr[data-d="7"]{--d:7}.tt tr[data-d="8"]{--d:8}.tt tr[data-d="9"]{--d:9}.tt tr[data-d="10"]{--d:10}.tt tr[data-d="11"]{--d:11}.tt tr[data-d="12"]{--d:12}.tt tr[data-d="13"]{--d:13}.tt tr[data-d="14"]{--d:14}.tt tr[data-d="15"]{--d:15}.tt tr[data-d="16"]{--d:16}.tt tr[data-d="17"]{--d:17}.tt tr[data-d="18"]{--d:18}.tt tr[data-d="19"]{--d:19}.tt tr[data-d="20"]{--d:20}.tt tr[data-d="21"]{--d:21}.tt tr[data-d="22"]{--d:22}.tt tr[data-d="23"]{--d:23}.tt tr[data-d="24"]{--d:24}
-.tt td.tn{padding-left:calc(var(--d,0) * 10px);white-space:nowrap}.tt tr.r:not(.br) td.tn{padding-left:calc(var(--d,0) * 10px + 26px)}.tn a{font-weight:600}
+.tt td.tn{position:relative;padding-left:calc(var(--d,0) * 10px + 26px);white-space:nowrap}.tt td.tn>.tg{position:absolute;left:calc(var(--d,0) * 10px);top:50%;transform:translateY(-50%)}.tn a{font-weight:600}
 .tt td.o{white-space:nowrap;color:var(--muted);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px}.tt td.syn{overflow-wrap:anywhere;min-width:8em}
 .tg{width:22px;height:22px;padding:0;margin-right:4px;font-size:14px;border:0;background:none;color:var(--muted);line-height:1;vertical-align:middle}
 .tg::before{content:"\25BE"}.tg[aria-expanded="false"]::before{content:"\25B8"}.tg:hover{color:var(--red)}
-.k{font-style:normal;display:inline-flex;align-items:center;justify-content:center;width:22px;height:20px;font-size:11px;font-weight:700;border-radius:4px;margin-right:6px;background:var(--code);color:var(--muted);vertical-align:middle}
-.k-table,.k-row{color:#8250df}.k-column,.k-scalar{color:#1a7f37}.k-notification{color:var(--red)}.k-identity{color:var(--link)}
-:root[data-theme=dark] .k-table,:root[data-theme=dark] .k-row{color:#c297ff}:root[data-theme=dark] .k-column,:root[data-theme=dark] .k-scalar{color:#56d364}
-@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .k-table,:root:not([data-theme=light]) .k-row{color:#c297ff}:root:not([data-theme=light]) .k-column,:root:not([data-theme=light]) .k-scalar{color:#56d364}}
+/* kind badge, from the row's data-k (an element per row would add thousands of elements to a large page) */
+.tt td.tn::before{content:"N";font-style:normal;display:inline-flex;align-items:center;justify-content:center;width:22px;height:20px;font-size:11px;font-weight:700;border-radius:4px;margin-right:6px;background:var(--code);color:var(--muted);vertical-align:middle}
+.tt tr[data-k=identity] td.tn::before{content:"I";color:var(--link)}.tt tr[data-k=scalar] td.tn::before{content:"S";color:#1a7f37}
+.tt tr[data-k=table] td.tn::before{content:"T";color:#8250df}.tt tr[data-k=row] td.tn::before{content:"R";color:#8250df}
+.tt tr[data-k=column] td.tn::before{content:"C";color:#1a7f37}.tt tr[data-k=notification] td.tn::before{content:"!";color:var(--red)}
+.tt tr[data-k=group] td.tn::before{content:"G"}.tt tr[data-k=compliance] td.tn::before{content:"M"}
+:root[data-theme=dark] .tt tr:is([data-k=table],[data-k=row]) td.tn::before{color:#c297ff}:root[data-theme=dark] .tt tr:is([data-k=column],[data-k=scalar]) td.tn::before{color:#56d364}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .tt tr:is([data-k=table],[data-k=row]) td.tn::before{color:#c297ff}:root:not([data-theme=light]) .tt tr:is([data-k=column],[data-k=scalar]) td.tn::before{color:#56d364}}
 .syn{color:var(--syn);font-size:13px}
 .acc{font-size:11px;border:1px solid var(--border);border-radius:4px;padding:1px 6px;color:var(--muted)}
 .st{font-size:12px;color:var(--red)}
@@ -155,8 +159,8 @@ table.imports td{overflow-wrap:anywhere;color:var(--muted)}table.imports td a{co
   .tt tr.r:not([hidden]){display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:8px;border-bottom:1px solid var(--line)}
   .tt tr.r>td{border:0;padding-top:4px;padding-bottom:4px}
   .tt tr.r>td:nth-child(n+4){display:none}
-  .tt td.tn{grid-column:1;grid-row:1;white-space:normal;overflow-wrap:anywhere;padding-left:calc(var(--d,0) * 8px + 6px)}
-  .tt tr.r:not(.br) td.tn{padding-left:calc(var(--d,0) * 8px + 32px)}
+  .tt td.tn{grid-column:1;grid-row:1;white-space:normal;overflow-wrap:anywhere;padding-left:calc(var(--d,0) * 8px + 32px)}
+  .tt td.tn>.tg{left:calc(var(--d,0) * 8px + 6px)}
   .tt td.syn{grid-column:2;grid-row:1;text-align:right;max-width:40vw;min-width:0;font-size:12px}
   .tt td.o{grid-column:1/-1;grid-row:2;padding-top:0!important;padding-left:calc(var(--d,0) * 8px + 60px);font-size:12px}
   .tt tr.dr:not([hidden]){display:block}.tt tr.dr>td{display:block;max-width:none}

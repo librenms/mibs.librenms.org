@@ -5,8 +5,13 @@
    shows. Markup is kept terse on purpose: these pages hold ~1M rows in total and Pages caps the site at 1 GB. #}
 {% macro node(n, t, d=0) -%}
 {% set o = n.obj %}{% set ex = t.ex %}{% set has_ex = o.name in ex -%}
-<tr class="r{% if n.children %} br{% endif %}" id="{{ o.name }}" data-d="{{ d }}"><td class="tn"><i class="k k-{{ o.kind }}">{{ KIND_ABBR.get(o.kind, "N") }}</i><a href="#{{ o.name }}">{{ o.name }}</a>{% if o.defined_twice %} <span class="twice" title="This MIB defines {{ o.name }} more than once, with different OIDs">defined twice</span>{% endif %}</td><td class="o">{{ o.oid }}</td><td class="syn"{% if o.name in t.hints %} title="{{ t.hints[o.name] }}"{% endif %}>{{ (o.syntax or "")|type_link(t.links) }}</td><td>{% if o.access %}<span class="acc">{{ ACCESS_ABBR.get(o.access, o.access) }}</span>{% endif %}</td><td>{% if o.status and o.status != "current" %}<span class="st">{{ o.status }}</span>{% endif %}</td>
-{%- if ex %}<td class="exv">{% if has_ex %}{% set e = ex[o.name][0] %}<code title="{{ e.t }} · instance .{{ e.i }} · {{ e.f }}">{{ e.v|enum_label(o.enums)|truncate(48, True, "…", 0) }}</code>{% endif %}</td>{% endif %}</tr>
+<tr class="r{% if n.children %} br{% endif %}" id="{{ o.name }}" data-d="{{ d }}" data-k="{{ o.kind }}"><td class="tn"><a href="#{{ o.name }}">{{ o.name }}</a>{% if o.defined_twice %} <span class="twice" title="This MIB defines {{ o.name }} more than once, with different OIDs">defined twice</span>{% endif %}</td><td class="o">{{ o.oid }}</td>
+{#- trailing empty cells are left out (fewer elements on pages with thousands of rows); the row's border and highlight span the full width anyway -#}
+{%- set has_acc = o.access %}{% set has_st = o.status and o.status != "current" %}
+{%- if o.syntax or has_acc or has_st or has_ex %}<td class="syn"{% if o.name in t.hints %} title="{{ t.hints[o.name] }}"{% endif %}>{{ (o.syntax or "")|type_link(t.links) }}</td>{% endif %}
+{%- if has_acc or has_st or has_ex %}<td>{% if has_acc %}<span class="acc">{{ ACCESS_ABBR.get(o.access, o.access) }}</span>{% endif %}</td>{% endif %}
+{%- if has_st or has_ex %}<td>{% if has_st %}<span class="st">{{ o.status }}</span>{% endif %}</td>{% endif %}
+{%- if has_ex %}<td class="exv">{% set e = ex[o.name][0] %}<code title="{{ e.t }} · instance .{{ e.i }} · {{ e.f }}">{{ e.v|enum_label(o.enums)|truncate(48, True, "…", 0) }}</code></td>{% endif %}</tr>
 {%- if o.description or o.units or o.indexes or o.augments or o.enums or o.objects or has_ex -%}
 <tr class="dr" hidden><td colspan="{{ 6 if ex else 5 }}"><div class="det"><p class="kl">{{ o.kind }}{% if o.syntax %} · {{ o.syntax }}{% endif %}{% if o.access %} · {{ o.access }}{% endif %}{% if o.status %} · {{ o.status }}{% endif %}</p>
 {%- if o.description %}<pre class="desc">{{ o.description }}</pre>{% endif -%}

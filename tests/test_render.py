@@ -32,8 +32,8 @@ def test_render_site(tmp_path):
     assert 'id="goodName"' in page and "1.3.6.1.4.1.99999.1" in page
     assert '<table class="tt">' in page
     assert "<th>Example" in page and '<td class="exv"><code title="OCTET STRING · instance .0 · acme">w' in page  # first example inline
-    assert 'data-d="0" id="goodMIB"' in page and 'data-d="1" id="goodName"' in page
-    assert '<tr class="r br" data-d="0" id="goodMIB">' in page
+    assert 'data-d="0" data-k="identity" id="goodMIB"' in page and 'data-d="1" data-k="scalar" id="goodName"' in page
+    assert '<tr class="r br" data-d="0" data-k="identity" id="goodMIB"><td class="tn"><a href="#goodMIB">goodMIB</a><td class="o">1.3.6.1.4.1.99999<tr' in page  # no badge element, no empty trailing cells
     assert page.count('<tr class="dr" hidden>') == 1  # only goodName has details; goodMIB has none
     assert page.count("Example values from LibreNMS test devices") == 1  # table only for objects with examples
     assert 'href="https://github.com/librenms/librenms/blob/abc1234def/tests/snmpsim/acme.snmprec"' in page
@@ -243,3 +243,14 @@ def test_short_description_gets_a_full_stop_before_the_facts():
     assert _meta_description(m, "Stulz") == "S-MIB: Enterprise-subtree for Stulz devices. 0 objects with OIDs, types and descriptions."
     m.identity["description"] = "Done."
     assert _meta_description(m, "Stulz").startswith("S-MIB: Done. 0 objects")
+
+
+def test_rows_leave_out_only_trailing_empty_cells(tmp_path):
+    m = Module("R-MIB", "_root", "R-MIB", "pysmi", objects=[
+        Obj("rRoot", "1.3.6.1.4.1.7", "node"),
+        Obj("rAcc", "1.3.6.1.4.1.7.1", "scalar", "Integer32", "read-only", "current"),
+        Obj("rOld", "1.3.6.1.4.1.7.2", "scalar", "Integer32", None, "deprecated")])
+    render_site(tmp_path, [m], SymbolTable([m]), {}, {}, SiteConfig("https://x.test", "abc", "d"), jobs=1)
+    page = canon((tmp_path / "mib/R-MIB/index.html").read_text())
+    assert '<td class="o">1.3.6.1.4.1.7.1<td class="syn">Integer32<td><span class="acc">RO</span><tr' in page
+    assert '<td class="o">1.3.6.1.4.1.7.2<td class="syn">Integer32<td><td><span class="st">deprecated</span></table>' in page
