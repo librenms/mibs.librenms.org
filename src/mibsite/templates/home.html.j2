@@ -11,6 +11,13 @@
   <div class="card"><b>{{ "{:,}".format(stats.objects) }}</b><span>Objects with an OID</span></div>
   <div class="card"><b>{{ "{:,}".format(stats.examples) }}</b><span>MIBs with example values</span></div>
 </section>
+{% if popular %}
+<section class="card">
+  <h2>Popular MIBs</h2>
+  <p class="muted">The MIBs from which LibreNMS uses the most objects to discover and monitor devices.</p>
+  <ul class="plist">{% for p in popular %}<li><a href="{{ root }}{{ p.m.url }}">{{ p.m.name }}</a>{% if p.vendor != "Other" %} <small>{{ p.vendor }}</small>{% endif %}{% if p.desc %}<span>{{ p.desc }}</span>{% endif %}</li>{% endfor %}</ul>
+</section>
+{% endif %}
 <section class="two">
   <div class="card">
     <h2>MIBs from A to Z</h2>
@@ -22,5 +29,11 @@
     <p class="muted">The IANA enterprise number of a MIB shows its vendor.</p>
     <div class="pills">{% for v in top_vendors %}<a href="{{ root }}/vendors/{{ v.slug }}/">{{ v.name }}</a>{% endfor %}<a class="more" href="{{ root }}/vendors/">See all vendors →</a></div>
   </div>
+</section>
+<section class="card about">
+  <h2>About the LibreNMS MIB Browser</h2>
+  <p>A MIB (Management Information Base) describes the data that a network device makes available over SNMP. Each object in a MIB has a name, such as <code>ifHCInOctets</code>, and a numeric object identifier (OID), such as <code>1.3.6.1.2.1.31.1.1.1.6</code>. The MIB also gives the type of each object, whether it can be read or written, and a description of what it means. Monitoring tools such as LibreNMS use MIBs to turn the numbers that a router, switch, firewall, UPS or server returns into named values with units.</p>
+  <p>This site shows all {{ "{:,}".format(stats.modules) }} MIBs that LibreNMS ships, from {{ "{:,}".format(stats.vendors) }} vendors and standards organizations such as the IETF. {% if used_mibs %}LibreNMS uses {{ "{:,}".format(used_mibs) }} of them to poll devices. {% endif %}For each MIB you can browse the OID tree, read the description of every object, table and notification (trap), see the textual conventions and imports, and see example values recorded from real devices in the LibreNMS test data.</p>
+  <p>To find an object, type its name, the name of its MIB or a numeric OID in the search box. An instance OID from an <code>snmpwalk</code> output, such as <code>1.3.6.1.2.1.2.2.1.10.5</code>, also finds the object that defines it. Each MIB page shows the <code>snmptranslate</code> and <code>snmpwalk</code> commands to query the MIB with net-snmp. The site is rebuilt automatically each time the MIBs in LibreNMS change.</p>
 </section>
 {% endblock %}

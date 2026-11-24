@@ -183,3 +183,18 @@ def test_clip():
     assert clip("short  text") == "short text"
     assert clip("one two three four", 12) == "one two…"
     assert clip("x" * 20, 10) == "x" * 9 + "…"
+
+
+def test_home_page_has_popular_mibs_and_about_text(tmp_path):
+    import re
+    good = Module("GOOD-MIB", "_root", "GOOD-MIB", "pysmi",
+                  identity={"description": "Widgets on a device. Copyright (c) 2009 IETF Trust and others."},
+                  objects=[Obj("goodMIB", "1.3.6.1.4.1.99999", "identity")])
+    render_site(tmp_path, [good], SymbolTable([good]), {}, {}, SiteConfig("https://x.test", "abc", "d"), jobs=1,
+                usage=Usage(objects={good.id: {"goodMIB"}}))
+    home = canon((tmp_path / "index.html").read_text())
+    assert "Popular MIBs" in home and '<a href="/mib/GOOD-MIB/">GOOD-MIB</a>' in home
+    assert "Widgets on a device." in home and "Copyright" not in home
+    assert "About the LibreNMS MIB Browser" in home
+    text = re.sub(r"<[^>]+>", " ", home.split("<main>")[1].split("</main>")[0])
+    assert len(text.split()) >= 250

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 
 import minify_html
 import shutil
@@ -112,9 +113,17 @@ def clip(text: str, limit: int = META_DESCRIPTION_MAX) -> str:
     return (cut.rsplit(" ", 1)[0] if " " in cut else cut).rstrip(" ,;:.-") + "…"
 
 
+_COPYRIGHT = re.compile(r"\s*\bCopyright\b.*", re.I | re.S)
+
+
+def summary(m: Module) -> str:
+    """The MIB's own description on one line, without the copyright notice many MIBs end it with."""
+    return " ".join(_COPYRIGHT.sub("", (m.identity or {}).get("description") or "").split())
+
+
 def _meta_description(m: Module, vendor: str) -> str:
     """The MIB's own description first (what a searcher wants to read), then what the page holds."""
-    desc = " ".join(((m.identity or {}).get("description") or "").split())
+    desc = summary(m)
     of = "" if vendor == "Other" else f" ({vendor})"
     facts = f"{len(m.objects):,} objects with OIDs, types and descriptions."
     if not desc:
@@ -316,9 +325,13 @@ def render_site(out: Path, modules: list[Module], table: SymbolTable, vendors: d
     vendor_list = sorted(((vendor_name[s], s, vm) for s, vm in by_vendor.items()), key=lambda v: v[0].lower())
 
     vendor_cards = [{"name": v, "slug": s, "count": len(vm), "oid": vendor_oid(vm)} for v, s, vm in vendor_list]
-    top_vendors = sorted((c for c in vendor_cards if c["name"] != "Other"), key=lambda c: -c["count"])[:10]
+    top_vendors = sorted((c for c in vendor_cards if c["name"] != "Other"), key=lambda c: -c["count"])[:20]
 
-    pages.append(_page(env, out, "/", "home.html.j2", cfg, stats=stats, letters=letters, top_vendors=top_vendors))
+    used = usage_stats(mods, table, examples, usage, top=12)
+    popular = [{"m": m, "vendor": vendors.get(m.id, "Other"),
+                "desc": clip(summary(m), 110)} for m, _ in used["top_used"]]
+    pages.append(_page(env, out, "/", "home.html.j2", cfg, stats=stats, letters=letters, top_vendors=top_vendors,
+                       popular=popular, used_mibs=used["used_mibs"]))
     pages.append(_page(env, out, "/mibs/", "letters.html.j2", cfg,
                        groups=mib_groups, vendors=vendors))
     pages.append(_page(env, out, "/vendors/", "vendors.html.j2", cfg,
