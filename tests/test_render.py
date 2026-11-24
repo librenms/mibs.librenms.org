@@ -144,3 +144,42 @@ def test_smi_date():
     assert smi_date("200006140000Z") == ("2000-06-14T00:00Z", "2000-06-14")
     assert smi_date("9809281000Z") == ("1998-09-28T10:00Z", "1998-09-28")
     assert smi_date("garbage") is None and smi_date("201313010000Z") is None
+
+
+def test_seo_titles_descriptions_and_lastmod(tmp_path):
+    import json
+    import re
+    long_desc = "The MIB module for managing widgets. " * 10
+    good = Module("GOOD-MIB", "_root", "GOOD-MIB", "pysmi", identity={"description": long_desc},
+                  objects=[Obj("goodMIB", "1.3.6.1.4.1.99999", "identity")])
+    bare = Module("BARE-MIB", "acme", "acme/BARE-MIB", "pysmi", objects=[Obj("b", "1.3.6.1.4.1.5", "node")])
+    mods = [good, bare]
+    pages = render_site(tmp_path, mods, SymbolTable(mods), {good.id: "Example"}, {},
+                        SiteConfig("https://x.test", "abc", "d"), jobs=1, modified={good.id: "2025-03-04"})
+    page = canon((tmp_path / "mib/GOOD-MIB/index.html").read_text())
+    assert "<title>GOOD-MIB (1.3.6.1.4.1.99999) – Example SNMP MIB | LibreNMS MIB Browser</title>" in page
+    desc = re.search(r'<meta content="([^"]*)" name="description"', page).group(1)
+    assert desc.startswith("GOOD-MIB: The MIB module for managing widgets.") and desc.endswith("…") and len(desc) <= 160
+    article = [json.loads(j) for j in re.findall(r'<script type="application/ld\+json">(.*?)</script>', page)][1]
+    assert article["dateModified"] == "2025-03-04" and article["publisher"]["name"] == "LibreNMS"
+    bare_page = canon((tmp_path / "mib/acme/BARE-MIB/index.html").read_text())
+    assert "<title>BARE-MIB (1.3.6.1.4.1.5) – SNMP MIB |" in bare_page  # vendor "Other" is left out
+    assert 'content="BARE-MIB SNMP MIB: 1 objects with OIDs' in bare_page and "dateModified" not in bare_page
+    sitemap = (tmp_path / "sitemap.xml").read_text()
+    assert "<loc>https://x.test/mib/GOOD-MIB/</loc><lastmod>2025-03-04</lastmod></url>" in sitemap
+    assert "<loc>https://x.test/mib/acme/BARE-MIB/</loc></url>" in sitemap
+    descriptions = set()
+    for p in pages:
+        if p.startswith("/mib/"):
+            continue
+        html = canon((tmp_path / p.strip("/") / "index.html").read_text())
+        descriptions.add(re.search(r'<meta content="([^"]*)" name="description"', html).group(1))
+    assert len(descriptions) == len([p for p in pages if not p.startswith("/mib/")])  # no two pages share one
+    assert any(d.startswith("All 2 SNMP MIBs") for d in descriptions)
+
+
+def test_clip():
+    from mibsite.render import clip
+    assert clip("short  text") == "short text"
+    assert clip("one two three four", 12) == "one two…"
+    assert clip("x" * 20, 10) == "x" * 9 + "…"

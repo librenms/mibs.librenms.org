@@ -1,5 +1,6 @@
 {% extends "base.html.j2" %}
 {% block title %}Statistics | LibreNMS MIB Browser{% endblock %}
+{% block description %}Statistics on the {{ "{:,}".format(stats.modules) }} SNMP MIBs in LibreNMS: objects, vendors, how well each MIB parses, which MIBs LibreNMS uses and which MIBs other MIBs import most.{% endblock %}
 {% block main %}
 <h1>Statistics</h1>
 <section class="card"><table class="stats"><tr><th>MIBs</th><td>{{ stats.modules }}</td></tr><tr><th>Objects</th><td>{{ stats.objects }}</td></tr><tr><th>Vendors</th><td>{{ stats.vendors }}</td></tr><tr><th>MIBs with example values</th><td>{{ stats.examples }}</td></tr>

@@ -35,3 +35,21 @@ def test_build_end_to_end(fixtures_dir, tmp_path, monkeypatch):
     # rebuild into the same dir is allowed (marker present)
     build(lib, out, "https://mibs.example.org", jobs=2, only="GOOD-MIB", extra=None, cache=tmp_path / "cache")
     assert not (out / "mib/acme/NOT-A-MIB/index.html").exists()
+
+
+def test_file_dates(tmp_path):
+    import subprocess
+    from mibsite.build import file_dates
+    def git(*a, date="2024-01-02T00:00:00Z"):
+        env = {"GIT_AUTHOR_DATE": date, "GIT_COMMITTER_DATE": date, "PATH": "/usr/bin:/bin", "HOME": str(tmp_path)}
+        subprocess.run(["git", "-C", str(tmp_path), "-c", "user.name=t", "-c", "user.email=t@t", *a], check=True,
+                       capture_output=True, env=env)
+    git("init", "-q")
+    (tmp_path / "mibs" / "acme").mkdir(parents=True)
+    (tmp_path / "mibs" / "A-MIB").write_text("a")
+    (tmp_path / "mibs" / "acme" / "B-MIB").write_text("b")
+    git("add", "."); git("commit", "-qm", "one")
+    (tmp_path / "mibs" / "acme" / "B-MIB").write_text("b2")
+    git("commit", "-qam", "two", date="2025-06-07T00:00:00Z")
+    assert file_dates(tmp_path / "mibs") == {"A-MIB": "2024-01-02", "acme/B-MIB": "2025-06-07"}
+    assert file_dates(tmp_path / "nowhere") == {}

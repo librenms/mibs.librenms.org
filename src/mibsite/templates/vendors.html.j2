@@ -1,6 +1,7 @@
 {% extends "base.html.j2" %}
 {% from "_letters.html.j2" import letter_groups %}
 {% block title %}MIBs by vendor | LibreNMS MIB Browser{% endblock %}
+{% block description %}SNMP MIBs in LibreNMS by vendor, with the IANA private enterprise OID (1.3.6.1.4.1.n) of each vendor and the number of MIBs it has.{% endblock %}
 {% block main %}
 <h1>Vendors</h1>
 <p class="muted">The IANA private enterprise number (1.3.6.1.4.1.n) of a MIB shows its vendor. Standards organizations show with their OID branch.</p>

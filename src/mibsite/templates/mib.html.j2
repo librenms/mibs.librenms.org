@@ -1,15 +1,18 @@
 {% extends "base.html.j2" %}
 {% from "_tree.html.j2" import node %}
-{% block title %}{{ m.name }} – SNMP MIB ({{ vendor }}) | LibreNMS MIB Browser{% endblock %}
+{% block title %}{{ m.name }}{% if root_oid %} ({{ root_oid }}){% endif %} – {% if vendor != "Other" %}{{ vendor }} {% endif %}SNMP MIB | LibreNMS MIB Browser{% endblock %}
 {% block description %}{{ description }}{% endblock %}
 {% block head %}
 <script type="application/ld+json">{{ {"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
   {"@type": "ListItem", "position": 1, "name": "MIBs", "item": cfg.base_url ~ "/mibs/"},
   {"@type": "ListItem", "position": 2, "name": vendor, "item": cfg.base_url ~ "/vendors/" ~ vendor_slug ~ "/"},
   {"@type": "ListItem", "position": 3, "name": m.name, "item": cfg.base_url ~ path}]}|tojson }}</script>
-<script type="application/ld+json">{{ {"@context": "https://schema.org", "@type": "TechArticle", "headline": m.name ~ " SNMP MIB",
+{% set article = {"@context": "https://schema.org", "@type": "TechArticle", "headline": m.name ~ " SNMP MIB",
   "description": description, "url": cfg.base_url ~ path,
-  "about": (m.identity or {}).get("organization") or vendor}|tojson }}</script>
+  "about": (m.identity or {}).get("organization") or vendor,
+  "publisher": {"@type": "Organization", "name": "LibreNMS", "url": "https://www.librenms.org/"}} %}
+{% if modified %}{% set _ = article.update({"dateModified": modified}) %}{% endif %}
+<script type="application/ld+json">{{ article|tojson }}</script>
 {% endblock %}
 {% block main %}
 <nav class="crumbs" aria-label="Breadcrumb"><a href="{{ root }}/mibs/">MIBs</a> › <a href="{{ root }}/vendors/{{ vendor_slug }}/">{{ vendor }}</a> › {{ m.name }}</nav>

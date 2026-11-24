@@ -37,6 +37,29 @@ def _sha(repo: Path) -> str:
         return "master"
 
 
+def file_dates(folder: Path) -> dict[str, str]:
+    """Last commit date (YYYY-MM-DD) of each file under `folder`, keyed by its path relative to `folder`.
+    Empty when `folder` is not in a git repository or the clone is shallow (every file would get the date of
+    the one commit there is)."""
+    def git(*args: str) -> str:
+        return subprocess.run(["git", "-C", str(folder), *args], capture_output=True, text=True, check=True).stdout
+    try:
+        if git("rev-parse", "--is-shallow-repository").strip() != "false":
+            return {}
+        # --no-renames: rename detection would fetch blobs in a blob-less (partial) clone
+        log = git("-c", "core.quotepath=off", "log", "--no-renames", "--relative", "--name-only", "--format=@%cs", "--", ".")
+    except (OSError, subprocess.CalledProcessError):
+        return {}
+    dates: dict[str, str] = {}
+    date = ""
+    for line in log.splitlines():
+        if line.startswith("@"):
+            date = line[1:]
+        elif line:
+            dates.setdefault(line, date)  # newest commit first
+    return dates
+
+
 def restore_descriptions(modules, mibs_root: Path, extra: Path | None) -> None:
     """Replace parser-normalised descriptions with the text as the MIB lays it out (line breaks kept)."""
     by_file = defaultdict(list)
@@ -87,10 +110,14 @@ def build(librenms: Path, out: Path, base_url: str, jobs: int, only: str | None,
     with phase("Collecting LibreNMS usage"):
         usage = collect_usage(librenms, modules)
         print(f"  {len(usage.modules):,} MIBs used by LibreNMS")
+    with phase("Reading MIB file dates"):
+        dates = {"": file_dates(mibs_root), EXTERNAL_DIR: file_dates(extra) if extra else {}}
+        modified = {m.id: d for m in modules if (d := dates[EXTERNAL_DIR if m.dir == EXTERNAL_DIR else ""].get(m.file))}
+        print(f"  {len(modified):,} MIBs with a date")
     cfg = SiteConfig(base_url.rstrip("/"), _sha(librenms), dt.date.today().isoformat())
     safe_clean(out)
     with phase("Rendering pages"):
-        render_site(out, modules, table, vendors, examples, cfg, jobs, usage)
+        render_site(out, modules, table, vendors, examples, cfg, jobs, usage, modified)
     with phase("Writing search index"):
         write_search_index(out / "data" / "search", modules, vendors)
     stats = {"modules": len(modules), "objects": sum(len(m.objects) for m in modules),
