@@ -2,6 +2,9 @@
 {% from "_letters.html.j2" import letter_groups %}
 {% block title %}All MIBs A–Z | LibreNMS MIB Browser{% endblock %}
 {% block description %}All {{ "{:,}".format(groups|map(attribute="1")|map("length")|sum) }} SNMP MIBs in LibreNMS from A to Z. Open a MIB to see its OID tree, object types, descriptions and example values.{% endblock %}
+{% block head %}
+{{ jsonld.collection(cfg, "All SNMP MIBs A–Z", self.description(), path) }}
+{% endblock %}
 {% block main %}
 <h1>All MIBs</h1>
 <p class="muted">All MIBs, in order of the first letter.</p>

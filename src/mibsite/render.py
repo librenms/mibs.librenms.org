@@ -15,6 +15,7 @@ from xml.sax.saxutils import escape
 from jinja2 import Environment, PackageLoader, select_autoescape
 from markupsafe import Markup, escape as html_escape
 
+from . import jsonld
 from .discover import EXTERNAL_DIR, ROOT_DIR
 from .model import Module, Obj, TextualConvention
 from .parse_pysmi import BASE_MIBS
@@ -86,7 +87,7 @@ def smi_date(value: str) -> tuple[str, str] | None:
 def make_env(root: str = "") -> Environment:
     env = Environment(loader=PackageLoader("mibsite", "templates"), autoescape=select_autoescape(["j2", "html"]),
                       trim_blocks=True, lstrip_blocks=True)
-    env.globals.update(KIND_ABBR=KIND_ABBR, ACCESS_ABBR=ACCESS_ABBR, TIER_LABEL=TIER_LABEL, root=root,
+    env.globals.update(jsonld=jsonld, KIND_ABBR=KIND_ABBR, ACCESS_ABBR=ACCESS_ABBR, TIER_LABEL=TIER_LABEL, root=root,
                        asset_v=asset_version())
     env.filters["slug"] = slugify
     env.filters["enum_label"] = enum_label

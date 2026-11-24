@@ -161,7 +161,7 @@ def test_seo_titles_descriptions_and_lastmod(tmp_path):
     desc = re.search(r'<meta content="([^"]*)" name="description"', page).group(1)
     assert desc.startswith("GOOD-MIB: The MIB module for managing widgets.") and desc.endswith("…") and len(desc) <= 160
     article = [json.loads(j) for j in re.findall(r'<script type="application/ld\+json">(.*?)</script>', page)][1]
-    assert article["dateModified"] == "2025-03-04" and article["publisher"]["name"] == "LibreNMS"
+    assert article["dateModified"] == "2025-03-04" and article["publisher"] == {"@id": "https://www.librenms.org/#org"}
     bare_page = canon((tmp_path / "mib/acme/BARE-MIB/index.html").read_text())
     assert "<title>BARE-MIB (1.3.6.1.4.1.5) – SNMP MIB |" in bare_page  # vendor "Other" is left out
     assert 'content="BARE-MIB SNMP MIB: 1 objects with OIDs' in bare_page and "dateModified" not in bare_page
@@ -206,3 +206,32 @@ def test_home_meta_description_length(tmp_path):
     render_site(tmp_path, [m], SymbolTable([m]), {}, {}, SiteConfig("https://x.test", "abc", "d"), jobs=1)
     desc = re.search(r'<meta content="([^"]*)" name="description"', canon((tmp_path / "index.html").read_text())).group(1)
     assert desc.startswith("Browse all 1 SNMP MIBs in LibreNMS from 1 vendors:") and 140 <= len(desc) <= 160
+
+
+def test_json_ld(tmp_path):
+    import json
+    import re
+    good = Module("GOOD-MIB", "_root", "GOOD-MIB", "pysmi", identity={"description": "Has </script> in it."},
+                  objects=[Obj("goodMIB", "1.3.6.1.4.1.99999", "identity")])
+    render_site(tmp_path, [good], SymbolTable([good]), {good.id: "Example"}, {},
+                SiteConfig("https://x.test", "abc", "d"), jobs=1, modified={good.id: "2025-01-02"})
+
+    def blocks(path):
+        html = (tmp_path / path).read_text()
+        return [json.loads(j) for j in re.findall(r'<script type="?application/ld\+json"?>(.*?)</script>', html, re.S)]
+
+    graph = blocks("index.html")[0]["@graph"]
+    site = next(x for x in graph if x["@type"] == "WebSite")
+    assert site["@id"] == "https://x.test/#website" and site["description"].startswith("Browse all 1 SNMP MIBs")
+    assert site["potentialAction"]["target"] == "https://x.test/search/?q={search_term_string}"
+    assert any(x["@type"] == "Organization" for x in graph)
+    mib = blocks("mib/GOOD-MIB/index.html")
+    assert [b["@type"] for b in mib] == ["BreadcrumbList", "TechArticle"]
+    assert mib[1]["isPartOf"] == {"@id": "https://x.test/#website"} and mib[1]["dateModified"] == "2025-01-02"
+    assert "</script>" in mib[1]["description"]  # escaped in the HTML, intact as JSON
+    vendor = blocks("vendors/example/index.html")
+    assert vendor[0]["@type"] == "CollectionPage" and vendor[0]["mainEntity"]["numberOfItems"] == 1
+    assert vendor[0]["mainEntity"]["itemListElement"][0]["url"] == "https://x.test/mib/GOOD-MIB/"
+    assert vendor[1]["itemListElement"][-1]["item"] == "https://x.test/vendors/example/"
+    assert blocks("mibs/index.html")[0]["@type"] == "CollectionPage"
+    assert blocks("vendors/index.html")[0]["@type"] == "CollectionPage"

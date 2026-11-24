@@ -2,6 +2,10 @@
 {% from "_letters.html.j2" import letter_groups %}
 {% block title %}{{ vendor }} SNMP MIBs | LibreNMS MIB Browser{% endblock %}
 {% block description %}{{ mods|length }} SNMP MIBs from {{ vendor }}: OID trees, object types and descriptions.{% endblock %}
+{% block head %}
+{{ jsonld.collection(cfg, vendor ~ " SNMP MIBs", self.description(), path, mods) }}
+{{ jsonld.breadcrumbs(cfg, [("Vendors", "/vendors/"), (vendor, path)]) }}
+{% endblock %}
 {% block main %}
 <nav class="crumbs" aria-label="Breadcrumb"><a href="{{ root }}/vendors/">Vendors</a> › {{ vendor }}</nav>
 <h1>{{ vendor }}</h1>

@@ -1,5 +1,8 @@
 {% extends "base.html.j2" %}
 {% block description %}Browse all {{ "{:,}".format(stats.modules) }} SNMP MIBs in LibreNMS from {{ "{:,}".format(stats.vendors) }} vendors: OID trees, object types, descriptions, traps and example values. Search by MIB, object name or OID.{% endblock %}
+{% block head %}
+{{ jsonld.home(cfg, self.description()) }}
+{% endblock %}
 {% block main %}
 <section class="hero">
   <h1>All SNMP MIBs in LibreNMS</h1>
