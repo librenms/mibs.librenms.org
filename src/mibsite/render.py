@@ -120,15 +120,69 @@ def summary(m: Module) -> str:
     return " ".join(_COPYRIGHT.sub("", (m.identity or {}).get("description") or "").split())
 
 
-def _meta_description(m: Module, vendor: str) -> str:
-    """The MIB's own description first (what a searcher wants to read), then what the page holds."""
+def count(n: int, word: str, plural: str | None = None) -> str:
+    return f"{n:,} {word if n == 1 else plural or word + 's'}"
+
+
+def _series(parts: list[str]) -> str:
+    return parts[0] if len(parts) == 1 else ", ".join(parts[:-1]) + " and " + parts[-1]
+
+
+MAIN_TABLES = 5
+
+
+def intro(m: Module, vendor: str, root_oid: str | None, imported_by: int, used_objects: int | None,
+          example_devices: int) -> dict:
+    """A short generated introduction for a MIB page, from facts the build already has (many MIBs describe
+    themselves in a few words or not at all). Sentences are plain text; "tables" names the largest tables,
+    which the page links to."""
+    org = " ".join(((m.identity or {}).get("organization") or "").split())
+    if vendor.startswith("Standards (") and vendor.endswith(")"):
+        who = f"a standard SNMP MIB ({vendor[len('Standards ('):-1]})"
+    elif vendor != "Other":
+        who = f"an SNMP MIB from {vendor}"
+    elif org and len(org) <= 60:
+        who = f"an SNMP MIB from {org}"
+    else:
+        who = "an SNMP MIB"
+    sentences = [f"{m.name} is {who}" + (f" under OID {root_oid}." if root_oid else ".")]
+    kinds = Counter(o.kind for o in m.objects)
+    parts = [count(kinds[k], w) for k, w in (("table", "table"), ("scalar", "scalar"), ("notification", "notification"))
+             if kinds[k]]
+    if m.objects:
+        sentences.append(f"It defines {count(len(m.objects), 'object')}"
+                         + (f", including {_series(parts)}" if parts else "") + ".")
+    if m.tcs:
+        sentences.append(f"It {'also ' if m.objects else ''}defines {count(len(m.tcs), 'textual convention')}.")
+    # largest tables first: a column's OID is its table's OID + ".1.N"
+    columns = Counter(o.oid.rsplit(".", 2)[0] for o in m.objects if o.kind == "column" and o.oid and o.oid.count(".") > 2)
+    tables = sorted((o for o in m.objects if o.kind == "table" and o.oid), key=lambda o: (-columns[o.oid], o.oid))
+    after = []
+    if imported_by:
+        after.append(f"{count(imported_by, 'other MIB')} import{'s' if imported_by == 1 else ''} it.")
+    if used_objects:
+        after.append(f"LibreNMS uses {used_objects:,} of its objects to monitor devices.")
+    elif used_objects == 0:
+        after.append("LibreNMS uses this MIB to monitor devices.")
+    if example_devices:
+        after.append(f"Example values come from {count(example_devices, 'LibreNMS test device')}.")
+    return {"sentences": sentences, "tables": [t.name for t in tables[:MAIN_TABLES]], "after": after}
+
+
+def intro_text(i: dict) -> str:
+    tables = [f"Main tables: {', '.join(i['tables'])}."] if i["tables"] else []
+    return " ".join(i["sentences"] + tables + i["after"])
+
+
+def _meta_description(m: Module, vendor: str, about: str = "") -> str:
+    """The MIB's own description first (what a searcher wants to read). A short one is followed by the
+    generated introduction (without its first sentence, which repeats the name); a missing one is replaced by it."""
     desc = summary(m)
-    of = "" if vendor == "Other" else f" ({vendor})"
-    facts = f"{len(m.objects):,} objects with OIDs, types and descriptions."
     if not desc:
-        return clip(f"{m.name} SNMP MIB{of}: {facts}")
+        return clip(about or f"{m.name} SNMP MIB: {count(len(m.objects), 'object')} with OIDs, types and descriptions.")
     if len(desc) < 80:
-        desc = (desc if desc[-1] in ".!?" else desc + ".") + " " + facts
+        rest = about.split(". ", 1)[1] if ". " in about else f"{count(len(m.objects), 'object')} with OIDs, types and descriptions."
+        desc = (desc if desc[-1] in ".!?" else desc + ".") + " " + rest
     return clip(f"{m.name}: {desc}")
 
 
@@ -173,7 +227,11 @@ def defined_names_of(m: Module) -> frozenset[str]:
 
 
 def mib_context(m: Module, table: SymbolTable, vendor: str, examples: dict[str, list], cfg: SiteConfig,
-                all_tcs: dict[str, TextualConvention] | None = None, modified: str | None = None) -> dict:
+                all_tcs: dict[str, TextualConvention] | None = None, modified: str | None = None,
+                used_objects: int | None = None, related: dict | None = None) -> dict:
+    """Template context of a MIB page. used_objects: how many of its objects LibreNMS uses (0: it uses the MIB
+    by name only; None: not at all). related: {"mods": [{name, url}], "count": MIBs of the vendor} for the
+    "More MIBs from" links."""
     root = site_root(cfg)
     imports, defined_in = [], {}  # defined_in: imported symbol -> link to its definition
     for modname, syms in m.imports.items():
@@ -194,15 +252,18 @@ def mib_context(m: Module, table: SymbolTable, vendor: str, examples: dict[str, 
             type_links[ty] = f"#{ty}"
         elif ty in defined_in:
             type_links[ty] = defined_in[ty]
+    root_oid = module_root_oid(m)
+    about = intro(m, vendor, root_oid, len(imported_by), used_objects,
+                  len({e["f"] for values in examples.values() for e in values}))
     return {
-        "m": m, "vendor": vendor, "vendor_slug": slugify(vendor), "too_large": not m.shows_objects,
+        "m": m, "vendor": vendor, "intro": about, "related": related, "vendor_slug": slugify(vendor), "too_large": not m.shows_objects,
         "tree": build_tree(objs), "unresolved": [o for o in objs if not o.oid], "imports": imports,
         # only what the template shows: whole Modules here would pickle most of the dataset per hub MIB
         "imported_by": [{"name": x.name, "url": x.url, "dir": x.dir} for x in imported_by],
         "notifications": [o for o in objs if o.kind == "notification"],
         "groups": [o for o in objs if o.kind in ("group", "compliance")],
-        "examples": examples, "hints": hints, "type_links": type_links, "root_oid": module_root_oid(m), "source_url": source_url(m, cfg),
-        "description": _meta_description(m, vendor), "modified": modified,
+        "examples": examples, "hints": hints, "type_links": type_links, "root_oid": root_oid, "source_url": source_url(m, cfg),
+        "description": _meta_description(m, vendor, intro_text(about)), "modified": modified,
     }
 
 
@@ -249,8 +310,25 @@ def vendor_oid(mods: list[Module]) -> str | None:
     return f"1.3.6.1.4.1.{counts.most_common(1)[0][0]}" if counts else None
 
 
+RELATED = 12  # "More MIBs from <vendor>" links on a MIB page
+
+
+def related_mibs(m: Module, vendor: str, vendor_mods: list[Module]) -> dict | None:
+    """MIBs listed under "More MIBs from <vendor>": the ones next to m in the vendor's A–Z list (all of them
+    for a small vendor), so every MIB is linked from its neighbours. None for "Other" (no common vendor)."""
+    if len(vendor_mods) < 2 or vendor == "Other":
+        return None
+    i = vendor_mods.index(m)
+    others = vendor_mods[i + 1:] + vendor_mods[:i]  # wraps around: the last MIBs link to the first
+    if len(others) > RELATED:
+        others = others[-RELATED // 2:] + others[:RELATED // 2]
+    picked = sorted(others, key=lambda x: (x.name.lower(), x.id))
+    return {"mods": [{"name": x.name, "url": x.url} for x in picked], "count": len(vendor_mods)}
+
+
 def write_moved_pages(out: Path, mods: list[Module], cfg: SiteConfig) -> None:
-    """Top-level MIBs moved from /mib/_root/NAME/ to /mib/NAME/: leave a redirect (keeping any #anchor)."""
+    """Top-level MIBs moved from /mib/_root/NAME/ to /mib/NAME/: leave a redirect (keeping any #anchor). No noindex:
+    with the canonical link and the instant refresh, search engines move the old URL's standing to the new one."""
     root = site_root(cfg)
     for m in mods:
         new = escape(f"{root}{m.url}")
@@ -258,7 +336,7 @@ def write_moved_pages(out: Path, mods: list[Module], cfg: SiteConfig) -> None:
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_text(
             f'<!doctype html><meta charset="utf-8"><title>{escape(m.name)} has moved</title>'
-            f'<meta name="robots" content="noindex"><link rel="canonical" href="{escape(cfg.base_url + m.url)}">'
+            f'<link rel="canonical" href="{escape(cfg.base_url + m.url)}">'
             f'<meta http-equiv="refresh" content="0; url={new}">'
             f'<script>location.replace("{new}" + location.hash)</script>'
             f'<p>Moved to <a href="{new}">{new}</a>.</p>\n')
@@ -299,17 +377,6 @@ def render_site(out: Path, modules: list[Module], table: SymbolTable, vendors: d
 
     mods = sorted(modules, key=lambda m: (m.name.lower(), m.id))
     all_tcs = {t.name: t for m in mods for t in m.tcs}
-    contexts = [mib_context(m, table, vendors.get(m.id, "Other"), examples.get(m.id, {}), cfg, all_tcs,
-                            modified.get(m.id)) for m in mods]
-    with Pool(jobs or None, initializer=_init, initargs=(cfg, out)) as pool:
-        progress = Progress("MIB pages", len(contexts))
-        pages = []
-        for page in pool.imap(_render_mib, contexts, chunksize=8):
-            pages.append(page)
-            progress.step()
-        progress.close()
-
-    env = make_env(site_root(cfg))
     # keyed by slug, the page path: IANA names that differ only in case (6527/7483 "Nokia (formerly/Formerly
     # 'Alcatel-Lucent')") share one page, shown under the first of their names
     by_vendor: dict[str, list[Module]] = defaultdict(list)
@@ -319,6 +386,24 @@ def render_site(out: Path, modules: list[Module], table: SymbolTable, vendors: d
         slug = slugify(name)
         by_vendor[slug].append(m)
         vendor_name[slug] = min(vendor_name.get(slug, name), name)
+    usage = usage or Usage()
+
+    def used_objects(m: Module) -> int | None:
+        return len(usage.objects[m.id]) if m.id in usage.objects else 0 if m.id in usage.modules else None
+
+    contexts = [mib_context(m, table, vendors.get(m.id, "Other"), examples.get(m.id, {}), cfg, all_tcs,
+                            modified.get(m.id), used_objects(m), related_mibs(m, vendors.get(m.id, "Other"),
+                                         by_vendor[slugify(vendors.get(m.id, "Other"))]))
+                for m in mods]
+    with Pool(jobs or None, initializer=_init, initargs=(cfg, out)) as pool:
+        progress = Progress("MIB pages", len(contexts))
+        pages = []
+        for page in pool.imap(_render_mib, contexts, chunksize=8):
+            pages.append(page)
+            progress.step()
+        progress.close()
+
+    env = make_env(site_root(cfg))
     mib_groups = group_by_letter(mods, lambda m: m.name)
     letters = [letter for letter, _ in mib_groups]
     stats = {"modules": len(mods), "objects": sum(len(m.objects) for m in mods), "vendors": len(by_vendor),
@@ -352,6 +437,11 @@ def render_site(out: Path, modules: list[Module], table: SymbolTable, vendors: d
         (out / "CNAME").write_text(host + "\n")
     (out / "robots.txt").write_text(f"User-agent: *\nAllow: /\nSitemap: {cfg.base_url}/sitemap.xml\n")
     lastmod = {m.url: modified[m.id] for m in mods if m.id in modified}
+    for _, slug, vmods in vendor_list:  # a list page changes when one of its MIBs does
+        if dates := [modified[m.id] for m in vmods if m.id in modified]:
+            lastmod[f"/vendors/{slug}/"] = max(dates)
+    if modified:
+        lastmod.update(dict.fromkeys(("/", "/mibs/", "/vendors/"), max(modified.values())))
     urls = "".join(f"<url><loc>{escape(cfg.base_url + p)}</loc>"
                    + (f"<lastmod>{lastmod[p]}</lastmod>" if p in lastmod else "") + "</url>" for p in pages)
     (out / "sitemap.xml").write_text(

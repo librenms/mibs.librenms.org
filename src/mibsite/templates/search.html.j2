@@ -2,7 +2,7 @@
 {% block title %}Find MIBs and OIDs | LibreNMS MIB Browser{% endblock %}
 {% block description %}Find an SNMP MIB, object or OID in the MIBs of LibreNMS. Type a name, or a numeric OID (an instance OID too) to find the object that defines it.{% endblock %}
 {% block main %}
-<h1>Find</h1>
+<h1>Find SNMP MIBs, objects and OIDs</h1>
 <form class="big" role="search" onsubmit="return false"><label class="sr" for="q">Find MIBs and OIDs</label><input id="q" name="q" type="search" autofocus autocomplete="off" placeholder="ifInOctets, IF-MIB, 1.3.6.1.2.1.2.2.1.10.5"></form>
 <p class="hint">Type the start of a MIB name or an object name. Type a numeric OID to find the object that defines it. An instance OID also gives a result.</p>
 <div id="results" aria-live="polite"></div>

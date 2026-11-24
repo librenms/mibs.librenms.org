@@ -89,6 +89,7 @@ article.mib{display:flex;flex-direction:column;gap:20px}
 .pill{padding:4px 10px;border-radius:999px;background:#1f6fb21a;color:var(--link);font-size:13px;font-weight:600}
 .pill.ext{background:var(--code);color:var(--muted)}
 pre.lead{font-size:16px;margin:12px 0 0;max-width:860px}
+.intro{margin:12px 0 0;max-width:860px;color:var(--muted)}
 pre.desc{white-space:pre-wrap;font:inherit;margin:0;overflow-wrap:anywhere}  /* <pre>: the minifier keeps the MIB's line breaks */
 .meta{display:grid;grid-template-columns:max-content 1fr;gap:6px 20px;margin:16px 0;font-size:14px}.meta dt{color:var(--muted)}.meta dd{margin:0;overflow-wrap:anywhere}
 .srclink{display:inline-flex;align-items:center;gap:6px;font-weight:600}

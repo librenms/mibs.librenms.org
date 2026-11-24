@@ -164,7 +164,8 @@ def test_seo_titles_descriptions_and_lastmod(tmp_path):
     assert article["dateModified"] == "2025-03-04" and article["publisher"] == {"@id": "https://www.librenms.org/#org"}
     bare_page = canon((tmp_path / "mib/acme/BARE-MIB/index.html").read_text())
     assert "<title>BARE-MIB (1.3.6.1.4.1.5) – SNMP MIB |" in bare_page  # vendor "Other" is left out
-    assert 'content="BARE-MIB SNMP MIB: 1 objects with OIDs' in bare_page and "dateModified" not in bare_page
+    assert 'content="BARE-MIB is an SNMP MIB under OID 1.3.6.1.4.1.5. It defines 1 object." name="description"' in bare_page
+    assert "dateModified" not in bare_page
     sitemap = (tmp_path / "sitemap.xml").read_text()
     assert "<loc>https://x.test/mib/GOOD-MIB/</loc><lastmod>2025-03-04</lastmod></url>" in sitemap
     assert "<loc>https://x.test/mib/acme/BARE-MIB/</loc></url>" in sitemap
@@ -241,6 +242,8 @@ def test_short_description_gets_a_full_stop_before_the_facts():
     from mibsite.render import _meta_description
     m = Module("S-MIB", "s", "s/S-MIB", "pysmi", identity={"description": "Enterprise-subtree for Stulz devices"})
     assert _meta_description(m, "Stulz") == "S-MIB: Enterprise-subtree for Stulz devices. 0 objects with OIDs, types and descriptions."
+    about = "S-MIB is an SNMP MIB from Stulz. It defines 3 objects."
+    assert _meta_description(m, "Stulz", about) == "S-MIB: Enterprise-subtree for Stulz devices. It defines 3 objects."
     m.identity["description"] = "Done."
     assert _meta_description(m, "Stulz").startswith("S-MIB: Done. 0 objects")
 
@@ -254,3 +257,52 @@ def test_rows_leave_out_only_trailing_empty_cells(tmp_path):
     page = canon((tmp_path / "mib/R-MIB/index.html").read_text())
     assert '<td class="o">1.3.6.1.4.1.7.1<td class="syn">Integer32<td><span class="acc">RO</span><tr' in page
     assert '<td class="o">1.3.6.1.4.1.7.2<td class="syn">Integer32<td><td><span class="st">deprecated</span></table>' in page
+
+
+def test_intro_related_and_list_lastmod(tmp_path):
+    objs = [Obj("ups", "1.3.6.1.4.1.318", "node"), Obj("upsTable", "1.3.6.1.4.1.318.1", "table"),
+            Obj("upsEntry", "1.3.6.1.4.1.318.1.1", "row"), Obj("upsA", "1.3.6.1.4.1.318.1.1.1", "column"),
+            Obj("upsB", "1.3.6.1.4.1.318.1.1.2", "column"), Obj("smallTable", "1.3.6.1.4.1.318.2", "table"),
+            Obj("smallEntry", "1.3.6.1.4.1.318.2.1", "row"), Obj("smallA", "1.3.6.1.4.1.318.2.1.1", "column"),
+            Obj("upsName", "1.3.6.1.4.1.318.3", "scalar"), Obj("upsTrap", "1.3.6.1.4.1.318.0.1", "notification")]
+    main = Module("APC-MIB", "apc", "apc/APC-MIB", "pysmi", objects=objs)
+    others = [Module(f"APC{i:02d}-MIB", "apc", f"apc/APC{i:02d}-MIB", "pysmi", imports={"APC-MIB": ["ups"]})
+              for i in range(20)]
+    loner = Module("LONE-MIB", "_root", "LONE-MIB", "pysmi", objects=[Obj("l", "1.3.6.1.4.1.9", "node")])
+    mods = [main, *others, loner]
+    vendors = {m.id: "APC" for m in [main, *others]}
+    examples = {main.id: {"upsName": [{"v": "x", "t": "OCTET STRING", "i": "0", "f": "apc_a"},
+                                      {"v": "y", "t": "OCTET STRING", "i": "0", "f": "apc_b"}]}}
+    render_site(tmp_path, mods, SymbolTable(mods), vendors, examples, SiteConfig("https://x.test", "abc", "d"), jobs=1,
+                usage=Usage(objects={main.id: {"upsName", "upsA"}}),
+                modified={main.id: "2025-01-01", others[3].id: "2025-06-01", loner.id: "2024-01-01"})
+    page = canon((tmp_path / "mib/apc/APC-MIB/index.html").read_text())
+    intro = page.split('<p class="intro">')[1].split('<div class="summary-grid">')[0].removesuffix("</p>")
+    assert intro == ("APC-MIB is an SNMP MIB from APC under OID 1.3.6.1.4.1.318. It defines 10 objects, including 2 tables, "
+                     '1 scalar and 1 notification. Main tables: <a href="#upsTable">upsTable</a>, <a href="#smallTable">'
+                     "smallTable</a>. 20 other MIBs import it. LibreNMS uses 2 of its objects to monitor devices. "
+                     "Example values come from 2 LibreNMS test devices.")
+    related = page.split("More MIBs from APC</h2>")[1].split("</section>")[0]
+    assert related.count("<li>") == 12 and "APC00-MIB" in related and "APC19-MIB" in related and "APC-MIB<" not in related
+    assert 'href="/vendors/apc/">All 21 MIBs from APC' in related
+    assert "More MIBs from" not in canon((tmp_path / "mib/LONE-MIB/index.html").read_text())  # vendor "Other"
+    small = canon((tmp_path / "mib/apc/APC05-MIB/index.html").read_text())
+    assert "1 other MIB imports" not in small and "LibreNMS uses" not in small
+    sitemap = (tmp_path / "sitemap.xml").read_text()
+    assert "<loc>https://x.test/vendors/apc/</loc><lastmod>2025-06-01</lastmod>" in sitemap
+    assert "<loc>https://x.test/</loc><lastmod>2025-06-01</lastmod>" in sitemap
+    assert "<loc>https://x.test/stats/</loc></url>" in sitemap
+    old = (tmp_path / "mib/_root/LONE-MIB/index.html").read_text()
+    assert "noindex" not in old and 'rel="canonical"' in old
+    assert "<h1>Find SNMP MIBs, objects and OIDs</h1>" in canon((tmp_path / "search/index.html").read_text())
+
+
+def test_intro_textual_conventions():
+    from mibsite.model import TextualConvention
+    from mibsite.render import intro, intro_text
+    tcs = [TextualConvention("A"), TextualConvention("B")]
+    only_tcs = Module("TC-MIB", "_root", "TC-MIB", "pysmi", tcs=tcs)
+    assert intro_text(intro(only_tcs, "Other", None, 0, None, 0)) == "TC-MIB is an SNMP MIB. It defines 2 textual conventions."
+    both = Module("B-MIB", "_root", "B-MIB", "pysmi", objects=[Obj("b", "1.3.6.1.4.1.9.1", "scalar")], tcs=tcs)
+    assert "It defines 1 object, including 1 scalar. It also defines 2 textual conventions." in intro_text(
+        intro(both, "Standards (IETF)", "1.3.6.1.4.1.9", 1, None, 0))

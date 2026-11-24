@@ -12,6 +12,7 @@
 <section class="card summary">
   <div class="title"><h1>{{ m.name }}</h1><a class="pill" href="{{ root }}/vendors/{{ vendor_slug }}/">{{ vendor }}</a>{% if m.dir == "_external" %}<span class="pill ext">External: LibreNMS does not include this MIB</span>{% endif %}</div>
   {% if m.identity and m.identity.description %}<pre class="desc lead">{{ m.identity.description }}</pre>{% endif %}
+  <p class="intro">{{ intro.sentences|join(" ") }}{% if intro.tables %} Main tables: {% for t in intro.tables %}{% if tree %}<a href="#{{ t }}">{{ t }}</a>{% else %}{{ t }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}.{% endif %}{% if intro.after %} {{ intro.after|join(" ") }}{% endif %}</p>
   <div class="summary-grid"><div>
   <dl class="meta">
     {% if m.identity and m.identity.organization %}<dt>Organization</dt><dd>{{ m.identity.organization }}</dd>{% endif %}
@@ -51,5 +52,6 @@
 </div>{% endif %}
 
 {% if imported_by %}<section class="card"><h2>Used by</h2><ul class="cols">{% for i in imported_by %}<li><a href="{{ root }}{{ i.url }}">{{ i.name }}</a>{% if i.dir not in ("_root", m.dir) %} <small>({{ i.dir }})</small>{% endif %}</li>{% endfor %}</ul></section>{% endif %}
+{% if related %}<section class="card"><h2>More MIBs from {{ vendor }}</h2><ul class="cols">{% for r in related.mods %}<li><a href="{{ root }}{{ r.url }}">{{ r.name }}</a></li>{% endfor %}</ul>{% if related.count > related.mods|length + 1 %}<p><a href="{{ root }}/vendors/{{ vendor_slug }}/">All {{ "{:,}".format(related.count) }} MIBs from {{ vendor }} →</a></p>{% endif %}</section>{% endif %}
 </article>
 {% endblock %}
