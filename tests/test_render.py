@@ -198,3 +198,11 @@ def test_home_page_has_popular_mibs_and_about_text(tmp_path):
     assert "About the LibreNMS MIB Browser" in home
     text = re.sub(r"<[^>]+>", " ", home.split("<main>")[1].split("</main>")[0])
     assert len(text.split()) >= 250
+
+
+def test_home_meta_description_length(tmp_path):
+    import re
+    m = Module("GOOD-MIB", "_root", "GOOD-MIB", "pysmi", objects=[Obj("goodMIB", "1.3.6.1.4.1.99999", "identity")])
+    render_site(tmp_path, [m], SymbolTable([m]), {}, {}, SiteConfig("https://x.test", "abc", "d"), jobs=1)
+    desc = re.search(r'<meta content="([^"]*)" name="description"', canon((tmp_path / "index.html").read_text())).group(1)
+    assert desc.startswith("Browse all 1 SNMP MIBs in LibreNMS from 1 vendors:") and 140 <= len(desc) <= 160
